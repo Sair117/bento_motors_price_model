@@ -63,6 +63,8 @@ class_order     = artifacts['class_order']
 shap_values_arr = artifacts['shap_values_sample']
 shap_expected   = artifacts['shap_expected_value']
 X_val_sample    = artifacts['X_shap_sample']
+scaler          = artifacts['scaler']
+scale_cols      = artifacts['scale_cols']
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -109,6 +111,12 @@ def preprocess_input(make, model_name, year, mileage, fuel, body_type,
     colour_cols = [c for c in df.columns if 'standard_colour' in c]
     df = df.drop(columns=[c for c in colour_cols if c in df.columns], errors='ignore')
     df = df.reindex(columns=feature_columns, fill_value=0)
+    
+    # Apply the same scaling used during training
+    cols_to_scale = [c for c in scale_cols if c in df.columns]
+    if cols_to_scale:
+        df[cols_to_scale] = scaler.transform(df[cols_to_scale])
+    
     return df
 
 
