@@ -294,15 +294,14 @@ elif page == "🔍 Model Interpretation":
 
     st.markdown("---")
 
-    st.subheader("📊 Feature Importance")
-    importance = best_model.feature_importances_
-    feat_imp = pd.DataFrame({
-        'Feature': feature_columns,
-        'Importance': importance
-    }).sort_values('Importance', ascending=True).tail(15)
-    fig = px.bar(feat_imp, x='Importance', y='Feature', orientation='h',
-                 color='Importance', color_continuous_scale='Blues')
-    fig.update_layout(height=500, showlegend=False)
+    st.subheader("📊 Model R² Comparison")
+    results_raw = artifacts['results']
+    comp_df = pd.DataFrame(results_raw).sort_values('R² Score', ascending=True)
+    fig = px.bar(comp_df, x='R² Score', y='Model', orientation='h',
+                 color='R² Score', color_continuous_scale='Blues',
+                 text=comp_df['R² Score'].apply(lambda x: f"{x:.4f}"))
+    fig.update_layout(height=400, showlegend=False, margin=dict(l=200))
+    fig.update_traces(textposition='outside')
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
