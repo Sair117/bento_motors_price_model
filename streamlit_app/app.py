@@ -18,10 +18,36 @@ from catboost import CatBoostRegressor
 # ═══════════════════════════════════════════════════════════════
 st.set_page_config(
     page_title="Car Price Predictor",
-    page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Optional: Add custom CSS to clean up Streamlit's default look
+st.markdown("""
+<style>
+    /* Clean up the main menu and footer for a more professional app feel */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    /* Make metrics look sharper */
+    div[data-testid="metric-container"] {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+    /* Simple styling for the predict button */
+    .stButton>button {
+        width: 100%;
+        border-radius: 4px;
+        height: 3rem;
+    }
+    /* Professional header styling */
+    h1, h2, h3 {
+        font-family: 'Inter', sans-serif;
+        color: #1f2937;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════
 # Load Artifacts (2 files: model + app data)
@@ -43,7 +69,7 @@ def load_all():
 try:
     best_model, artifacts = load_all()
 except FileNotFoundError as e:
-    st.error(f"⚠️ Missing artifact file: {e}")
+    st.error(f"Missing artifact file: {e}")
     st.info("Run the notebook's save cells and place best_model.cbm and app_data.pkl here.")
     st.stop()
 
@@ -131,39 +157,39 @@ def assign_band(price):
 # ═══════════════════════════════════════════════════════════════
 # Sidebar
 # ═══════════════════════════════════════════════════════════════
-st.sidebar.title("🚗 Car Price Predictor")
+st.sidebar.title("Bento Motors")
 st.sidebar.markdown("---")
 page = st.sidebar.radio(
-    "Navigate",
-    ["🏠 Price Predictor", "📊 Model Performance", "🔍 Model Interpretation", "ℹ️ About"]
+    "Navigation",
+    ["Price Predictor", "Model Performance", "Model Interpretation", "About"]
 )
 
 
 # ═══════════════════════════════════════════════════════════════
 # PAGE 1: Price Predictor
 # ═══════════════════════════════════════════════════════════════
-if page == "🏠 Price Predictor":
-    st.title("🚗 Car Price Predictor")
-    st.markdown("Enter car details below to get an instant price prediction with AI explanation.")
+if page == "Price Predictor":
+    st.title("Vehicle Valuation")
+    st.markdown("Enter vehicle specifications below to generate an automated price prediction and SHAP analysis.")
     st.markdown("---")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.subheader("🏷️ Vehicle Identity")
+        st.subheader("Vehicle Identity")
         make = st.selectbox("Make", artifacts['unique_makes'])
         available_models = artifacts['models_by_make'].get(make, ['Other'])
         model_name = st.selectbox("Model", available_models)
         year = st.slider("Year of Registration", 1990, 2020, 2017)
 
     with col2:
-        st.subheader("📋 Specifications")
+        st.subheader("Specifications")
         mileage = st.number_input("Mileage", 0, 500000, 30000, step=1000)
         fuel = st.selectbox("Fuel Type", artifacts['unique_fuels'])
         body_type = st.selectbox("Body Type", artifacts['unique_body_types'])
 
     with col3:
-        st.subheader("⚙️ Details")
+        st.subheader("Details")
         transmission = st.selectbox("Transmission",
                                      artifacts.get('unique_transmissions', ['Manual', 'Automatic']))
         condition = st.selectbox("Condition",
@@ -171,7 +197,7 @@ if page == "🏠 Price Predictor":
 
     st.markdown("---")
 
-    if st.button("🔮 Predict Price", type="primary", use_container_width=True):
+    if st.button("Generate Valuation", type="primary", use_container_width=True):
         input_df = preprocess_input(make, model_name, year, mileage, fuel,
                                      body_type, transmission, condition)
 
@@ -180,11 +206,11 @@ if page == "🏠 Price Predictor":
 
         st.markdown("---")
         r1, r2 = st.columns(2)
-        r1.metric("💰 Predicted Price", f"£{predicted_price:,.0f}")
-        r2.metric("📊 Price Band", predicted_band)
+        r1.metric("Predicted Price", f"£{predicted_price:,.0f}")
+        r2.metric("Market Segment", predicted_band)
 
-        st.markdown("### 🧠 Why This Price?")
-        st.caption("SHAP values show how each feature pushes the prediction up or down from the average.")
+        st.markdown("### Valuation Analysis")
+        st.caption("SHAP feature attribution: Visualizing the impact of individual specifications on the final valuation.")
 
         try:
             explainer = shap.TreeExplainer(best_model)
@@ -199,21 +225,21 @@ if page == "🏠 Price Predictor":
             shap.plots.waterfall(explanation, max_display=12, show=False)
             st.pyplot(fig)
             plt.close()
-            st.info(f"**Base value**: £{explainer.expected_value:,.0f} (average). "
-                    f"Features push prediction to **£{predicted_price:,.0f}**.")
+            st.info(f"Base Market Value: £{explainer.expected_value:,.0f}. "
+                    f"Vehicle-specific features adjust the valuation to £{predicted_price:,.0f}.")
         except Exception as e:
-            st.warning(f"SHAP unavailable: {e}")
+            st.warning(f"SHAP explainer unavailable: {e}")
 
 
 # ═══════════════════════════════════════════════════════════════
 # PAGE 2: Model Performance
 # ═══════════════════════════════════════════════════════════════
-elif page == "📊 Model Performance":
-    st.title("📊 Model Performance Dashboard")
-    st.markdown(f"**Best model**: {best_model_name}")
+elif page == "Model Performance":
+    st.title("Model Performance Dashboard")
+    st.markdown(f"**Primary Model**: {best_model_name}")
     st.markdown("---")
 
-    st.subheader("🏆 Model Comparison")
+    st.subheader("Regression Benchmarks")
     rdf = pd.DataFrame(results).sort_values('R² Score', ascending=False)
     display_df = rdf.copy()
     display_df['RMSE'] = display_df['RMSE'].apply(lambda x: f"£{x:,.0f}")
@@ -231,128 +257,132 @@ elif page == "📊 Model Performance":
     test_preds = artifacts.get('test_preds')
 
     with col1:
-        st.subheader("📈 Actual vs Predicted (Validation)")
+        st.subheader("Actual vs Predicted (Validation)")
         if y_val is not None and val_preds is not None:
             mask = y_val < 100000
             fig = px.scatter(x=y_val[mask], y=val_preds[mask],
-                            labels={'x': 'Actual (£)', 'y': 'Predicted (£)'},
+                            labels={'x': 'Actual Price (£)', 'y': 'Predicted Price (£)'},
                             opacity=0.15)
             fig.add_trace(go.Scatter(x=[0, 100000], y=[0, 100000],
-                                     mode='lines', name='Perfect',
-                                     line=dict(dash='dash', color='red')))
-            fig.update_layout(height=400, showlegend=False)
+                                     mode='lines', name='Perfect Alignment',
+                                     line=dict(dash='dash', color='#ef4444')))
+            fig.update_layout(height=400, showlegend=False, 
+                              plot_bgcolor='white', paper_bgcolor='white')
             st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.subheader("📉 Residual Distribution (Test)")
+        st.subheader("Residual Distribution (Test)")
         if y_test is not None and test_preds is not None:
             res = y_test - test_preds
             res_clip = res[(res > -30000) & (res < 30000)]
             fig = px.histogram(res_clip, nbins=100,
-                              labels={'value': 'Error (£)', 'count': 'Count'})
-            fig.update_layout(height=400, showlegend=False)
+                              labels={'value': 'Valuation Error (£)', 'count': 'Frequency'},
+                              color_discrete_sequence=['#3b82f6'])
+            fig.update_layout(height=400, showlegend=False,
+                              plot_bgcolor='white', paper_bgcolor='white')
             st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
-    st.subheader("🎯 Prediction Accuracy")
+    st.subheader("Prediction Precision")
     if test_preds is not None:
         abs_err = np.abs(y_test - test_preds)
         cols = st.columns(5)
         for i, p in enumerate([50, 75, 90, 95, 99]):
-            cols[i].metric(f"{p}th Percentile Error", f"£{np.percentile(abs_err, p):,.0f}")
+            cols[i].metric(f"P{p} Error Margin", f"£{np.percentile(abs_err, p):,.0f}")
 
     st.markdown("---")
-    st.subheader("🏷️ 5-Band Classification")
+    st.subheader("Price Segmentation Strategy")
     st.markdown("""
-    | Band | Range | Description |
-    |------|-------|-------------|
-    | Budget | < £10K | Economy / older used cars |
-    | Mid-Range | £10K–£25K | Mainstream family cars |
-    | Premium | £25K–£50K | New premium brands |
-    | Luxury | £50K–£100K | Luxury daily drivers |
-    | Supercar | > £100K | Exotic / performance |
+    | Market Segment | Price Range | Target Demographics / Inventory Profile |
+    |----------------|-------------|---------------------------------------|
+    | Budget | < £10K | Economy, reliable prior-owned inventory |
+    | Mid-Range | £10K–£25K | Mainstream consumer vehicles |
+    | Premium | £25K–£50K | Entry-to-mid level premium brands |
+    | Luxury | £50K–£100K | Executive and luxury vehicles |
+    | Supercar | > £100K | High-performance and exotic inventory |
     """)
 
 
 # ═══════════════════════════════════════════════════════════════
 # PAGE 3: Model Interpretation
 # ═══════════════════════════════════════════════════════════════
-elif page == "🔍 Model Interpretation":
-    st.title("🔍 Model Interpretation")
-    st.markdown(f"Understanding what **{best_model_name}** has learned.")
+elif page == "Model Interpretation":
+    st.title("Model Interpretation")
+    st.markdown(f"Interpretability analysis for **{best_model_name}**.")
     st.markdown("---")
 
-    st.subheader("🌊 SHAP Summary — Global Feature Impact")
-    st.caption("Each dot = one car. Red = high value, blue = low. Position = impact on price.")
+    st.subheader("SHAP Summary (Global Feature Attribution)")
+    st.caption("Distribution of feature influences across the validation cohort.")
     try:
         fig, ax = plt.subplots(figsize=(10, 8))
         shap.summary_plot(shap_values_arr, X_val_sample, show=False, max_display=15)
         st.pyplot(fig)
         plt.close()
     except Exception as e:
-        st.warning(f"SHAP summary unavailable: {e}")
+        st.warning(f"SHAP summary analysis currently unavailable: {e}")
 
     st.markdown("---")
 
-    st.subheader("📊 Model R² Comparison")
+    st.subheader("Coefficient of Determination (R²) Benchmarks")
     results_raw = artifacts['results']
     comp_df = pd.DataFrame(results_raw).sort_values('R² Score', ascending=True)
     fig = px.bar(comp_df, x='R² Score', y='Model', orientation='h',
                  color='R² Score', color_continuous_scale='Blues',
                  text=comp_df['R² Score'].apply(lambda x: f"{x:.4f}"))
-    fig.update_layout(height=400, showlegend=False, margin=dict(l=200))
+    fig.update_layout(height=400, showlegend=False, margin=dict(l=200),
+                      plot_bgcolor='white', paper_bgcolor='white')
     fig.update_traces(textposition='outside')
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
-    st.subheader("💡 Key Insights")
+    st.subheader("Core Determinants of Value")
     st.markdown("""
-    - **Make & Model** (target-encoded) dominate — brand is the #1 price driver
-    - **Mileage** and **Car Age** capture depreciation
-    - **Mileage per Year** reflects usage intensity
-    - **Body Type** and **Fuel Type** have moderate effects
+    - **Make & Model (Target-Encoded)**: Represent the primary driving force behind vehicle valuation, reflecting brand equity.
+    - **Mileage & Vehicle Age**: The definitive indicators of depreciation over time.
+    - **Mileage per Year**: Acts as an engineered proxy for usage intensity and anticipated wear-and-tear.
+    - **Body & Fuel Type**: Secondary determinants influencing market demand elasticity.
     """)
 
     st.markdown("---")
-    st.subheader("⚖️ Bias-Variance Analysis")
+    st.subheader("Bias-Variance Trade-off Analysis")
     for r in sorted(results, key=lambda x: x['R² Score'], reverse=True):
         gap = r.get('Train R²', 0) - r['R² Score']
-        if gap > 0.10: s = "🔴 Overfitting"
-        elif gap > 0.05: s = "🟡 Slight overfit"
-        elif r.get('Train R²', 0) < 0.70: s = "🔵 Underfitting"
-        else: s = "🟢 Balanced"
-        st.markdown(f"**{r['Model']}**: Train={r.get('Train R²',0):.4f}, "
-                    f"Val={r['R² Score']:.4f}, Gap={gap:.4f} — {s}")
+        if gap > 0.10: s = "Overfitting (High Variance)"
+        elif gap > 0.05: s = "Slight Variance"
+        elif r.get('Train R²', 0) < 0.70: s = "Underfitting (High Bias)"
+        else: s = "Optimal Generalization"
+        st.markdown(f"**{r['Model']}**: Training R²={r.get('Train R²',0):.4f}, "
+                    f"Validation R²={r['R² Score']:.4f}, Delta={gap:.4f} — *{s}*")
 
 
 # ═══════════════════════════════════════════════════════════════
 # PAGE 4: About
 # ═══════════════════════════════════════════════════════════════
-elif page == "ℹ️ About":
-    st.title("ℹ️ About This Project")
+elif page == "About":
+    st.title("Project Overview")
     st.markdown("---")
     st.markdown("""
-    ### 🚗 Car Price Prediction Model
+    ### Automated Vehicle Valuation Model
 
-    ML-powered used car price prediction for the UK market.
+    A machine learning driven approach to used vehicle appraisal in the UK automotive market.
 
-    #### Dataset
-    - **Source**: UK used car listings (~393,000 records)
-    - **Features**: Make, model, year, mileage, fuel, body type, transmission, condition
-    - **Target**: Sale price (£)
+    #### Data Infrastructure
+    - **Source**: Aggregated UK vehicle listings (~393,000 sanitized records)
+    - **Variables**: Make, model, year, mileage, fuel type, body type, transmission, condition
+    - **Target Variable**: Advertised Sale Price (£)
 
-    #### Models
-    - **Regression**: CatBoost — R²=0.88 on mainstream cars (<£50K, 96% of market)
-    - **Classification**: Random Forest — 88.7% accuracy across 5 price bands
+    #### Algorithmic Approach
+    - **Regression Pipeline**: Utilizes CatBoost (R²=0.88 on mainstream segments representing 96% of market capitalization)
+    - **Classification Strategy**: Employs Random Forest ensembles achieving 88.7% accuracy across 5 distinct market segments
 
-    #### Pipeline
-    1. K-fold target encoding (prevents leakage)
-    2. Frequency encoding (category prevalence)
-    3. OneHot encoding (fitted on training data only)
-    4. Feature engineering: car_age, mileage_per_year
+    #### Preprocessing Methodology
+    1. K-Fold target encoding for high-cardinality features (minimizing data leakage)
+    2. Frequency distributions to capture category liquidity
+    3. Scoped One-Hot encoding constrained to training distributions
+    4. Derived feature integration (e.g., historical usage intensity via `mileage_per_year`)
 
-    #### Interpretation
-    - SHAP provides full transparency for every prediction
-    - Global and individual-level explanations available
+    #### Explainable AI (XAI) Integration
+    - Granular transparency achieved via SHapley Additive exPlanations (SHAP)
+    - Supports both macro-level feature importance tracking and micro-level appraisal justification
     """)
-    st.caption("Built as part of an ML coursework project.")
+    st.caption("Developed for enterprise-grade inventory valuation and analytics.")
