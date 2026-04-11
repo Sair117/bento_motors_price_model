@@ -175,6 +175,29 @@ if page == "🏠 Price Predictor":
         r1.metric("💰 Predicted Price", f"£{predicted_price:,.0f}")
         r2.metric("📊 Price Band", predicted_band)
 
+        # Debug panel
+        with st.expander("🔧 Debug: Feature Vector"):
+            st.markdown("**Input features sent to model:**")
+            debug_df = input_df.T.copy()
+            debug_df.columns = ['Value']
+            st.dataframe(debug_df, use_container_width=True)
+            
+            st.markdown("**Training sample (first row of X_val_sample) for comparison:**")
+            if X_val_sample is not None and len(X_val_sample) > 0:
+                sample_df = X_val_sample.iloc[0:1].T.copy()
+                sample_df.columns = ['Training Sample']
+                st.dataframe(sample_df, use_container_width=True)
+            
+            st.markdown(f"**Feature columns expected ({len(feature_columns)}):**")
+            st.write(feature_columns)
+            
+            st.markdown(f"**Features created ({len(input_df.columns)}):**")
+            st.write(input_df.columns.tolist())
+            
+            missing = [c for c in feature_columns if c not in input_df.columns]
+            if missing:
+                st.error(f"Missing features (filled with 0): {missing}")
+
         st.markdown("### 🧠 Why This Price?")
         st.caption("SHAP values show how each feature pushes the prediction up or down from the average.")
 
