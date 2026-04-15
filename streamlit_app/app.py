@@ -141,7 +141,7 @@ page = st.sidebar.radio(
 # ═══════════════════════════════════════════════════════════════
 # PAGE 1: Price Predictor
 # ═══════════════════════════════════════════════════════════════
-if page == "🏠 Price Predictor":
+if page == "Price Predictor":
     st.title("🚗 Car Price Predictor")
     st.markdown("Enter car details below to get an instant price prediction with AI explanation.")
     st.markdown("---")
@@ -207,7 +207,7 @@ if page == "🏠 Price Predictor":
 # ═══════════════════════════════════════════════════════════════
 # PAGE 2: Model Performance
 # ═══════════════════════════════════════════════════════════════
-elif page == "📊 Model Performance":
+elif page == "Model Performance":
     st.title("📊 Model Performance Dashboard")
     st.markdown(f"**Best model**: {best_model_name}")
     st.markdown("---")
@@ -276,7 +276,7 @@ elif page == "📊 Model Performance":
 # ═══════════════════════════════════════════════════════════════
 # PAGE 3: Model Interpretation
 # ═══════════════════════════════════════════════════════════════
-elif page == "🔍 Model Interpretation":
+elif page == "Model Interpretation":
     st.title("🔍 Model Interpretation")
     st.markdown(f"Understanding what **{best_model_name}** has learned.")
     st.markdown("---")
