@@ -188,9 +188,15 @@ if page == "Price Predictor":
         try:
             explainer = shap.TreeExplainer(best_model)
             sv = explainer.shap_values(input_df)
+            # RF TreeExplainer may return expected_value as array — extract scalar
+            base_val = explainer.expected_value
+            if hasattr(base_val, '__len__'):
+                base_val = float(base_val[0]) if len(base_val) == 1 else float(base_val)
+            else:
+                base_val = float(base_val)
             explanation = shap.Explanation(
                 values=sv[0],
-                base_values=explainer.expected_value,
+                base_values=base_val,
                 data=input_df.iloc[0].values,
                 feature_names=feature_columns
             )
@@ -198,7 +204,7 @@ if page == "Price Predictor":
             shap.plots.waterfall(explanation, max_display=12, show=False)
             st.pyplot(fig)
             plt.close()
-            st.info(f"**Base value**: £{explainer.expected_value:,.0f} (average). "
+            st.info(f"**Base value**: £{base_val:,.0f} (average). "
                     f"Features push prediction to **£{predicted_price:,.0f}**.")
         except Exception as e:
             st.warning(f"SHAP unavailable: {e}")
