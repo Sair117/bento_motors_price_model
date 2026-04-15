@@ -4,6 +4,6 @@ numpy
 matplotlib
 seaborn
 shap
-catboost
+joblib
 scikit-learn
 plotly

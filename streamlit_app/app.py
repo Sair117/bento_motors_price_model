@@ -13,7 +13,8 @@ import shap
 import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
-from catboost import CatBoostRegressor
+import joblib
+from sklearn.ensemble import RandomForestRegressor
 
 # ═══════════════════════════════════════════════════════════════
 st.set_page_config(
@@ -29,10 +30,8 @@ st.set_page_config(
 @st.cache_resource
 def load_all():
     base = Path(__file__).parent
-    
-    # CatBoost model (native format — ~2 MB)
-    model = CatBoostRegressor()
-    model.load_model(str(base / "best_model.cbm"))
+    # Random Forest model
+    model = joblib.load(str(base / "best_model.joblib"))
     
     # App data (encodings, options, results — ~2 MB)
     with open(base / "app_data.pkl", "rb") as f:
@@ -44,7 +43,7 @@ try:
     best_model, artifacts = load_all()
 except FileNotFoundError as e:
     st.error(f"⚠️ Missing artifact file: {e}")
-    st.info("Run the notebook's save cells and place best_model.cbm and app_data.pkl here.")
+    st.info("Run the notebook's save cells and place best_model.joblib and app_data.pkl here.")
     st.stop()
 
 # Unpack
@@ -135,7 +134,7 @@ st.sidebar.title("🚗 Car Price Predictor")
 st.sidebar.markdown("---")
 page = st.sidebar.radio(
     "Navigate",
-    ["🏠 Price Predictor", "📊 Model Performance", "🔍 Model Interpretation", "ℹ️ About"]
+    ["Price Predictor", "Model Performance", "Model Interpretation", "ℹ️ About"]
 )
 
 
@@ -150,20 +149,20 @@ if page == "🏠 Price Predictor":
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.subheader("🏷️ Vehicle Identity")
+        st.subheader("Vehicle Identity")
         make = st.selectbox("Make", artifacts['unique_makes'])
         available_models = artifacts['models_by_make'].get(make, ['Other'])
         model_name = st.selectbox("Model", available_models)
         year = st.slider("Year of Registration", 1990, 2020, 2017)
 
     with col2:
-        st.subheader("📋 Specifications")
+        st.subheader("Specifications")
         mileage = st.number_input("Mileage", 0, 500000, 30000, step=1000)
         fuel = st.selectbox("Fuel Type", artifacts['unique_fuels'])
         body_type = st.selectbox("Body Type", artifacts['unique_body_types'])
 
     with col3:
-        st.subheader("⚙️ Details")
+        st.subheader("Details")
         transmission = st.selectbox("Transmission",
                                      artifacts.get('unique_transmissions', ['Manual', 'Automatic']))
         condition = st.selectbox("Condition",
@@ -171,7 +170,7 @@ if page == "🏠 Price Predictor":
 
     st.markdown("---")
 
-    if st.button("🔮 Predict Price", type="primary", use_container_width=True):
+    if st.button("Predict Price", type="primary", use_container_width=True):
         input_df = preprocess_input(make, model_name, year, mileage, fuel,
                                      body_type, transmission, condition)
 
@@ -342,7 +341,7 @@ elif page == "ℹ️ About":
     - **Target**: Sale price (£)
 
     #### Models
-    - **Regression**: CatBoost — R²=0.88 on mainstream cars (<£50K, 96% of market)
+    - **Regression**: Random Forest
     - **Classification**: Random Forest — 88.7% accuracy across 5 price bands
 
     #### Pipeline
